@@ -9,24 +9,22 @@ namespace Cartas_y_barajas
     internal class Baraja
     {
         private List<Carta> mazo;
-        private List<Carta> cartasRobadas;
         private Random random;
-
-        public Baraja()
-        {
-            mazo = CrearCartas();
-            cartasRobadas = new List<Carta>();
-            random = new Random();
-        }
 
         public List<Carta> Mazo
         {
             get { return mazo; }
         }
 
+        public Baraja()
+        {
+            mazo = CrearCartas();
+            random = new Random();
+        }
+
         public  List<Carta> CrearCartas()
         {
-            List<Carta> mazo = new List<Carta>();
+            mazo = new List<Carta>();
 
             string[] palos = { "corazones", "picas", "diamantes", "tréboles" };
 
@@ -37,7 +35,6 @@ namespace Cartas_y_barajas
                     mazo.Add(new Carta(numero, palo));
                 }
             }
-
             return mazo;
         }
 
@@ -51,45 +48,23 @@ namespace Cartas_y_barajas
             Console.WriteLine("El mazo ha sido barajado.");
         }
 
-        public Carta RobarPrimeraCarta()
+        public Carta RobarCarta(int indice)
         {
-            if (mazo.Count > 0)
-            {
-                Carta carta = mazo[0];
-                mazo.RemoveAt(0);
-                cartasRobadas.Add(carta);
-                return carta;
-            }
-            Console.WriteLine("No hay más cartas en el mazo.");
-            return null;
-        }
-
-        public Carta RobarCartaPorIndice(int indice)
-        {
-            if (indice >= 0 && indice < mazo.Count)
+            if (mazo.Count > 0 && indice >= 0 && indice < mazo.Count)
             {
                 Carta carta = mazo[indice];
                 mazo.RemoveAt(indice);
-                cartasRobadas.Add(carta);
                 return carta;
             }
-            Console.WriteLine("Índice fuera de rango.");
+            Console.WriteLine("Índice fuera de rango o no hay más cartas en el mazo.");
             return null;
         }
 
-        public Carta RobarCartaAleatoria()
-        {
-            if (mazo.Count > 0)
-            {
-                int indice = random.Next(mazo.Count);
-                Carta carta = mazo[indice];
-                mazo.RemoveAt(indice);
-                cartasRobadas.Add(carta);
-                return carta;
-            }
-            Console.WriteLine("No hay más cartas en el mazo.");
-            return null;
-        }
+        public Carta RobarPrimeraCarta() => RobarCarta(0);
+
+        public Carta RobarCartaPorIndice(int indice) => RobarCarta(indice);
+
+        public Carta RobarCartaAleatoria() => RobarCarta(random.Next(mazo.Count));
 
         public void MostrarMazo()
         {

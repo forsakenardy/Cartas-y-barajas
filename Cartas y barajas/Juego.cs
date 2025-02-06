@@ -8,88 +8,121 @@ namespace Cartas_y_barajas
 {
     internal class Juego
     {
-        private List<Carta> Jugador1;
-        private List<Carta> Jugador2;
-        private Baraja baraja;
+        private static List<List<Carta>> jugadores;
 
-        public Juego(Baraja baraja)
+        public static void IniciarJuego(List<List<Carta>> jugadoresList)
         {
-            this.baraja = baraja;
-            Jugador1 = new List<Carta>();
-            Jugador2 = new List<Carta>();
-        }
-
-        public void RepartirCartas()
-        {
-            bool turnoJugador1 = true;
-
-            while (baraja.Mazo.Count > 0)
+            if (jugadoresList == null || jugadoresList.Count == 0)
             {
-                Carta carta = baraja.RobarPrimeraCarta();
-                if (turnoJugador1)
-                    Jugador1.Add(carta);
-                else
-                    Jugador2.Add(carta);
-
-                turnoJugador1 = !turnoJugador1;
+                throw new ArgumentException("La lista de jugadores no puede ser nula o vacía.");
             }
 
-            baraja.Mazo.Clear();
-
-            Console.WriteLine("Todas las cartas han sido repartidas y el mazo está vacío.");
-            Console.ReadKey();
+            jugadores = jugadoresList;
+            Rondas();
         }
 
-        public void Rondas()
+        public static void Rondas()
         {
-            while (Jugador1.Count > 0 || Jugador2.Count > 0)
+            while (jugadores.Any(j => j.Count > 0))
             {
                 Console.Clear();
-                Console.WriteLine($"El jugador1 lanza el {Jugador1[0].Numero} de {Jugador1[0].Palo}");
+                Console.WriteLine("Iniciando nueva ronda...");
+                JugarRonda();
+                Console.WriteLine("Siguiente ronda...");
                 Console.ReadKey();
-                Console.WriteLine($"El jugador2 lanza el {Jugador2[0].Numero} de {Jugador2[0].Palo}");
-                Console.ReadKey();
-                Console.Clear();
+            }
 
-                List<Carta> cartasEnJuego = new List<Carta>{Jugador1[0],Jugador2[0]};
+            Console.WriteLine("Juego terminado.");
+        }
 
-                while (Jugador1[0].Numero == Jugador2[0].Numero)
+        private static void JugarRonda()
+        {
+            List<Carta> cartasEnJuego = new List<Carta>();
+            List<int> jugadoresActivos = new List<int>();
+
+            for (int i = 0; i < jugadores.Count; i++)
+            {
+                if (jugadores[i].Count > 0)
                 {
-                    Console.WriteLine("Es un empate, buscando más cartas...");
-
-                    Jugador1.RemoveAt(0);
-                    Jugador2.RemoveAt(0);
-
-                    cartasEnJuego.Add(Jugador1[0]);
-                    cartasEnJuego.Add(Jugador2[0]);
-
+                    Carta carta = jugadores[i][0];
+                    Console.WriteLine($"El jugador {i + 1} lanza el {carta.Numero} de {carta.Palo}");
                     Console.ReadKey();
-                    Console.WriteLine($"El jugador1 lanza el {Jugador1[0].Numero} de {Jugador1[0].Palo}");
-                    Console.ReadKey();
-                    Console.WriteLine($"El jugador2 lanza el {Jugador2[0].Numero} de {Jugador2[0].Palo}");
-                    Console.ReadKey();
+                    cartasEnJuego.Add(carta);
+                    jugadoresActivos.Add(i);
                 }
+            }
 
-                if (Jugador1[0].Numero > Jugador2[0].Numero)
-                {
-                    Console.WriteLine($"El jugador 1 gana la ronda y obtiene todas las cartas.");
-                    Jugador1.AddRange(cartasEnJuego);
-                }
+            int ganadorIndex = ResolverEmpates(cartasEnJuego, jugadoresActivos);
 
-                else if (Jugador2[0].Numero > Jugador1[0].Numero)
-                {
-                    Console.WriteLine($"El jugador 2 gana la ronda y obtiene todas las cartas.");
-                    Jugador2.AddRange(cartasEnJuego);
-                }
-
-                Jugador1.RemoveAt(0);
-                Jugador2.RemoveAt(0);
-
+            if (ganadorIndex != -1)
+            {
+                Console.WriteLine($"El jugador {ganadorIndex + 1} gana la ronda y obtiene todas las cartas.");
                 Console.ReadKey();
                 Console.Clear();
-                Console.WriteLine($"A el jugador1 le quedan {Jugador1.Count} cartas" +
-                    $" y al Jugador2 le quedan {Jugador2.Count} cartas");
-                Console.WriteLine("Siguiente ronda");
+                jugadores[ganadorIndex].AddRange(cartasEnJuego);
+            }
+
+            foreach (int jugadorIndex in jugadoresActivos)
+            {
+                if (jugadores[jugadorIndex].Count > 0)
+                {
+                    jugadores[jugadorIndex].RemoveAt(0);
+                }
+            }
+
+            for (int i = 0; i < jugadores.Count; i++)
+            {
+                if (jugadores[i].Count > 0)
+                    Console.WriteLine($"Al jugador {i + 1} le quedan {jugadores[i].Count} cartas.");
+                else
+                    Console.WriteLine($"El jugador {i + 1} se ha quedado sin cartas.");
+            }
+        }
+
+        private static int ResolverEmpates(List<Carta> cartasEnJuego, List<int> jugadoresActivos)
+        {
+            while (true)
+            {
+                int maxNumero = cartasEnJuego.Max(c => c.Numero);
+                List<int> jugadoresEmpatados = jugadoresActivos
+                    .Where(i => jugadores[i].Count > 0 && jugadores[i][0].Numero == maxNumero)
+                    .ToList();
+
+                if (jugadoresEmpatados.Count == 1)
+                {
+                    return jugadoresEmpatados[0];
+                }
+
+                Console.WriteLine("Empate entre jugadores: " + string.Join(", ", jugadoresEmpatados.Select(j => j + 1)));
+
+                List<int> jugadoresQuePuedenSeguir = jugadoresEmpatados
+                    .Where(j => jugadores[j].Count > 1)
+                    .ToList();
+
+                if (jugadoresQuePuedenSeguir.Count == 0)
+                {
+                    Console.WriteLine("Todos los jugadores empatados se han quedado sin cartas. Las cartas quedan en el mazo.");
+                    return -1;
+                }
+
+                jugadoresActivos = new List<int>(jugadoresQuePuedenSeguir);
+
+                foreach (int jugadorIndex in jugadoresQuePuedenSeguir)
+                {
+                    jugadores[jugadorIndex].RemoveAt(0);
+                }
+
+                cartasEnJuego.Clear();
+                foreach (int jugadorIndex in jugadoresQuePuedenSeguir)
+                {
+                    if (jugadores[jugadorIndex].Count > 0)
+                    {
+                        Carta nuevaCarta = jugadores[jugadorIndex][0];
+                        cartasEnJuego.Add(nuevaCarta);
+                        Console.WriteLine($"El jugador {jugadorIndex + 1} lanza el {nuevaCarta.Numero} de {nuevaCarta.Palo} para el desempate.");
+                    }
+                }
+
                 Console.ReadKey();
             }
         }
